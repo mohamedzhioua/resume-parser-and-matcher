@@ -119,7 +119,7 @@ const ResumeParser = ({ language = 'fr' }) => {
 
       const apiUrl = config.PARSE_RESUME_ENDPOINT
       
-      logger.log(`[${requestId}] Making request to: ${apiUrl}`)
+      logger.log(`[${requestId}] Making request to: ${apiUrl} (will be proxied in dev)`)
       logger.log(`[${requestId}] Request options:`, {
         method: requestOptions.method,
         timeout: `${config.getRequestTimeoutSeconds()}s`,

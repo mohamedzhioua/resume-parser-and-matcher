@@ -169,7 +169,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
 
       const apiUrl = config.COMPATIBILITY_SCORE_ENDPOINT
       
-      logger.log(`[${requestId}] Making compatibility score request to: ${apiUrl}`)
+      logger.log(`[${requestId}] Making compatibility score request to: ${apiUrl} (will be proxied in dev)`)
 
       const response = await fetch(apiUrl, requestOptions)
 
