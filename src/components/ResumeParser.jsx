@@ -1,5 +1,11 @@
-import { useState } from 'react'
-import { config, logger } from './config'
+import React, { useState } from 'react'
+import { apiService } from '../services/api'
+import { validationUtils } from '../utils/validation'
+import { logger } from '../utils/logger'
+import { config } from '../config'
+import FileUpload from './FileUpload'
+import LoadingSpinner from './LoadingSpinner'
+import ErrorDisplay from './ErrorDisplay'
 
 const ResumeParser = ({ language = 'fr' }) => {
   const [selectedFile, setSelectedFile] = useState(null)
@@ -10,22 +16,16 @@ const ResumeParser = ({ language = 'fr' }) => {
 
   const translations = {
     fr: {
-      chooseFile: 'Choisir un fichier PDF',
-      clickToBrowse: 'Cliquez pour parcourir ou glisser-déposer',
       uploadAnalyze: 'Télécharger & Analyser',
       reset: 'Réinitialiser',
       processing: 'Traitement de votre CV...',
       processingTime: `Cela peut prendre jusqu'à ${config.getRequestTimeoutSeconds()} secondes (temps de réponse API: ~7 secondes)`,
-      error: 'Erreur',
       parsedData: 'Données CV Analysées',
       requestId: 'ID de Demande',
       duration: 'Durée',
       fileSize: 'Taille du Fichier',
       timestamp: 'Horodatage',
-      errorType: 'Type d\'Erreur',
       selectPdfFirst: 'Veuillez sélectionner un fichier PDF d\'abord',
-      selectValidPdf: 'Veuillez sélectionner un fichier PDF valide',
-      fileTooLarge: `Le fichier est trop volumineux. Taille maximale: ${config.getMaxFileSizeMB()} MB`,
       requestTimeout: `La demande a expiré après ${config.getRequestTimeoutSeconds()} secondes. Le serveur peut être lent ou indisponible.`,
       connectionTimeout: 'Connexion expirée. Veuillez vérifier votre connexion internet et réessayer. Le serveur peut être arrêté ou inaccessible.',
       networkError: 'Erreur réseau. Veuillez vérifier votre connexion internet et réessayer.',
@@ -33,22 +33,16 @@ const ResumeParser = ({ language = 'fr' }) => {
       corsError: 'Erreur CORS. Le serveur peut ne pas autoriser les demandes de cette origine.'
     },
     en: {
-      chooseFile: 'Choose a PDF file',
-      clickToBrowse: 'Click to browse or drag-and-drop',
       uploadAnalyze: 'Upload & Analyze',
       reset: 'Reset',
       processing: 'Processing your resume...',
       processingTime: `This may take up to ${config.getRequestTimeoutSeconds()} seconds (API response time: ~7 seconds)`,
-      error: 'Error',
       parsedData: 'Parsed Resume Data',
       requestId: 'Request ID',
       duration: 'Duration',
       fileSize: 'File Size',
       timestamp: 'Timestamp',
-      errorType: 'Error Type',
       selectPdfFirst: 'Please select a PDF file first',
-      selectValidPdf: 'Please select a valid PDF file',
-      fileTooLarge: `File is too large. Maximum size: ${config.getMaxFileSizeMB()} MB`,
       requestTimeout: `Request timed out after ${config.getRequestTimeoutSeconds()} seconds. The server may be slow or unavailable.`,
       connectionTimeout: 'Connection timed out. Please check your internet connection and try again. The server may be down or unreachable.',
       networkError: 'Network error. Please check your internet connection and try again.',
@@ -59,28 +53,11 @@ const ResumeParser = ({ language = 'fr' }) => {
 
   const t = translations[language]
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0]
-    if (file && file.type === 'application/pdf') {
-      if (file.size > config.MAX_FILE_SIZE) {
-        setError(t.fileTooLarge)
-        setSelectedFile(null)
-        return
-      }
-      setSelectedFile(file)
-      setError(null)
-      setResponse(null)
-      setRequestDetails(null)
-      logger.log('File selected:', {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: new Date(file.lastModified).toISOString()
-      })
-    } else {
-      setError(t.selectValidPdf)
-      setSelectedFile(null)
-    }
+  const handleFileSelect = (file, error) => {
+    setSelectedFile(file)
+    setError(error)
+    setResponse(null)
+    setRequestDetails(null)
   }
 
   const handleUpload = async () => {
@@ -94,80 +71,16 @@ const ResumeParser = ({ language = 'fr' }) => {
     setResponse(null)
     setRequestDetails(null)
 
-    const startTime = Date.now()
-    const requestId = Math.random().toString(36).substr(2, 9)
-
-    logger.log(`[${requestId}] Starting upload request...`)
-    logger.log(`[${requestId}] File details:`, {
-      name: selectedFile.name,
-      size: selectedFile.size,
-      type: selectedFile.type
-    })
-
     try {
-      const formData = new FormData()
-      formData.append('resume', selectedFile)
-
-      logger.log(`[${requestId}] FormData created with file`)
-      logger.log(`[${requestId}] FormData entries:`, Array.from(formData.entries()))
-
-      const requestOptions = {
-        method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(config.REQUEST_TIMEOUT),
-      }
-
-      const apiUrl = config.PARSE_RESUME_ENDPOINT
+      const result = await apiService.parseResume(selectedFile)
       
-      logger.log(`[${requestId}] Making request to: ${apiUrl} (will be proxied in dev)`)
-      logger.log(`[${requestId}] Request options:`, {
-        method: requestOptions.method,
-        timeout: `${config.getRequestTimeoutSeconds()}s`,
-        hasFormData: true,
-        fieldName: 'resume'
-      })
-
-      const response = await fetch(apiUrl, requestOptions)
-
-      const endTime = Date.now()
-      const duration = endTime - startTime
-
-      logger.log(`[${requestId}] Response received after ${duration}ms`)
-      logger.log(`[${requestId}] Response status:`, response.status)
-      logger.log(`[${requestId}] Response headers:`, Object.fromEntries(response.headers.entries()))
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        logger.error(`[${requestId}] Response error:`, {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        })
-        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      logger.log(`[${requestId}] Response data:`, data)
-
-      setResponse(data)
+      setResponse(result.data)
       setRequestDetails({
-        requestId,
-        duration: `${duration}ms`,
-        fileSize: selectedFile.size,
-        timestamp: new Date().toISOString()
+        ...result,
+        fileSize: selectedFile.size
       })
 
     } catch (err) {
-      const endTime = Date.now()
-      const duration = endTime - startTime
-
-      logger.error(`[${requestId}] Request failed after ${duration}ms:`, err)
-      logger.error(`[${requestId}] Error details:`, {
-        name: err.name,
-        message: err.message,
-        stack: err.stack
-      })
-
       let errorMessage = err.message
       
       if (err.name === 'AbortError') {
@@ -184,8 +97,8 @@ const ResumeParser = ({ language = 'fr' }) => {
 
       setError(errorMessage)
       setRequestDetails({
-        requestId,
-        duration: `${duration}ms`,
+        requestId: validationUtils.generateRequestId(),
+        duration: 'N/A',
         error: err.name,
         timestamp: new Date().toISOString()
       })
@@ -203,24 +116,10 @@ const ResumeParser = ({ language = 'fr' }) => {
 
   return (
     <div className="fade-in">
-      <div className="upload-area" onClick={() => document.getElementById('file-input').click()}>
-        <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10,9 9,9 8,9"/>
-        </svg>
-        <div className="upload-text">{selectedFile ? selectedFile.name : t.chooseFile}</div>
-        <div className="upload-subtext">{t.clickToBrowse}</div>
-      </div>
-      
-      <input
-        type="file"
-        accept=".pdf"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-        id="file-input"
+      <FileUpload
+        onFileSelect={handleFileSelect}
+        selectedFile={selectedFile}
+        language={language}
       />
       
       <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
@@ -247,29 +146,17 @@ const ResumeParser = ({ language = 'fr' }) => {
       </div>
 
       {isLoading && (
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>{t.processing}</p>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{t.processingTime}</p>
-        </div>
+        <LoadingSpinner 
+          message={t.processing}
+          language={language}
+        />
       )}
 
-      {error && (
-        <div className="error">
-          <h3>{t.error}</h3>
-          <p>{error}</p>
-          {requestDetails && (
-            <div style={{ marginTop: '12px', padding: '12px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '12px' }}>
-              <p><strong>{t.requestId}:</strong> {requestDetails.requestId}</p>
-              <p><strong>{t.duration}:</strong> {requestDetails.duration}</p>
-              <p><strong>{t.timestamp}:</strong> {requestDetails.timestamp}</p>
-              {requestDetails.error && (
-                <p><strong>{t.errorType}:</strong> {requestDetails.error}</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      <ErrorDisplay
+        error={error}
+        requestDetails={requestDetails}
+        language={language}
+      />
 
       {response && (
         <div className="results">

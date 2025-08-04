@@ -1,5 +1,11 @@
-import { useState } from 'react'
-import { config, logger } from './config'
+import React, { useState } from 'react'
+import { apiService } from '../services/api'
+import { validationUtils } from '../utils/validation'
+import { logger } from '../utils/logger'
+import { APP_CONSTANTS } from '../constants'
+import FileUpload from './FileUpload'
+import LoadingSpinner from './LoadingSpinner'
+import ErrorDisplay from './ErrorDisplay'
 
 const CompatibilityScore = ({ language = 'fr' }) => {
   const [resumeFile, setResumeFile] = useState(null)
@@ -13,8 +19,6 @@ const CompatibilityScore = ({ language = 'fr' }) => {
   const translations = {
     fr: {
       uploadResume: 'Télécharger CV',
-      chooseFile: 'Choisir un fichier PDF',
-      clickToBrowse: 'Cliquez pour parcourir ou glisser-déposer',
       jobDescription: 'Description du Poste',
       jobDescriptionPlaceholder: 'Entrez la description détaillée du poste...',
       requirements: 'Exigences',
@@ -24,8 +28,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       calculateScore: 'Calculer le Score',
       reset: 'Réinitialiser',
       processing: 'Calcul du score de compatibilité...',
-      processingTime: `Cela peut prendre jusqu'à ${config.getRequestTimeoutSeconds()} secondes`,
-      error: 'Erreur',
+      processingTime: `Cela peut prendre jusqu'à ${APP_CONSTANTS.REQUEST_TIMEOUT / 1000} secondes`,
       compatibilityScore: 'Score de Compatibilité',
       score: 'Score',
       excellent: 'Excellent',
@@ -37,10 +40,8 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       fairDesc: 'Votre profil correspond partiellement aux exigences du poste.',
       poorDesc: 'Votre profil ne correspond pas bien aux exigences du poste.',
       selectResumeFirst: 'Veuillez sélectionner un CV d\'abord',
-      selectValidPdf: 'Veuillez sélectionner un fichier PDF valide',
-      fileTooLarge: `Le fichier est trop volumineux. Taille maximale: ${config.getMaxFileSizeMB()} MB`,
       fillJobDescription: 'Veuillez remplir au moins la description du poste',
-      requestTimeout: `La demande a expiré après ${config.getRequestTimeoutSeconds()} secondes. Le serveur peut être lent ou indisponible.`,
+      requestTimeout: `La demande a expiré après ${APP_CONSTANTS.REQUEST_TIMEOUT / 1000} secondes. Le serveur peut être lent ou indisponible.`,
       connectionTimeout: 'Connexion expirée. Veuillez vérifier votre connexion internet et réessayer.',
       networkError: 'Erreur réseau. Veuillez vérifier votre connexion internet et réessayer.',
       sslError: 'Erreur SSL/TLS. Il peut y avoir un problème de certificat avec le serveur.',
@@ -52,8 +53,6 @@ const CompatibilityScore = ({ language = 'fr' }) => {
     },
     en: {
       uploadResume: 'Upload Resume',
-      chooseFile: 'Choose a PDF file',
-      clickToBrowse: 'Click to browse or drag-and-drop',
       jobDescription: 'Job Description',
       jobDescriptionPlaceholder: 'Enter detailed job description...',
       requirements: 'Requirements',
@@ -63,8 +62,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       calculateScore: 'Calculate Score',
       reset: 'Reset',
       processing: 'Calculating compatibility score...',
-      processingTime: `This may take up to ${config.getRequestTimeoutSeconds()} seconds`,
-      error: 'Error',
+      processingTime: `This may take up to ${APP_CONSTANTS.REQUEST_TIMEOUT / 1000} seconds`,
       compatibilityScore: 'Compatibility Score',
       score: 'Score',
       excellent: 'Excellent',
@@ -76,10 +74,8 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       fairDesc: 'Your profile partially matches the job requirements.',
       poorDesc: 'Your profile does not match well with the job requirements.',
       selectResumeFirst: 'Please select a resume first',
-      selectValidPdf: 'Please select a valid PDF file',
-      fileTooLarge: `File is too large. Maximum size: ${config.getMaxFileSizeMB()} MB`,
       fillJobDescription: 'Please fill in at least the job description',
-      requestTimeout: `Request timed out after ${config.getRequestTimeoutSeconds()} seconds. The server may be slow or unavailable.`,
+      requestTimeout: `Request timed out after ${APP_CONSTANTS.REQUEST_TIMEOUT / 1000} seconds. The server may be slow or unavailable.`,
       connectionTimeout: 'Connection timed out. Please check your internet connection and try again.',
       networkError: 'Network error. Please check your internet connection and try again.',
       sslError: 'SSL/TLS error. There may be a certificate issue with the server.',
@@ -93,41 +89,30 @@ const CompatibilityScore = ({ language = 'fr' }) => {
 
   const t = translations[language]
 
-  const handleResumeChange = (event) => {
-    const file = event.target.files[0]
-    if (file && file.type === 'application/pdf') {
-      if (file.size > config.MAX_FILE_SIZE) {
-        setError(t.fileTooLarge)
-        setResumeFile(null)
-        return
-      }
-      setResumeFile(file)
-      setError(null)
-      setResult(null)
-    } else {
-      setError(t.selectValidPdf)
-      setResumeFile(null)
-    }
+  const handleResumeSelect = (file, error) => {
+    setResumeFile(file)
+    setError(error)
+    setResult(null)
   }
 
   const getScoreClass = (score) => {
-    if (score >= 80) return 'score-excellent'
-    if (score >= 60) return 'score-good'
-    if (score >= 40) return 'score-fair'
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.EXCELLENT) return 'score-excellent'
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.GOOD) return 'score-good'
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.FAIR) return 'score-fair'
     return 'score-poor'
   }
 
   const getScoreLabel = (score) => {
-    if (score >= 80) return t.excellent
-    if (score >= 60) return t.good
-    if (score >= 40) return t.fair
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.EXCELLENT) return t.excellent
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.GOOD) return t.good
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.FAIR) return t.fair
     return t.poor
   }
 
   const getScoreDescription = (score) => {
-    if (score >= 80) return t.excellentDesc
-    if (score >= 60) return t.goodDesc
-    if (score >= 40) return t.fairDesc
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.EXCELLENT) return t.excellentDesc
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.GOOD) return t.goodDesc
+    if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.FAIR) return t.fairDesc
     return t.poorDesc
   }
 
@@ -137,7 +122,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       return
     }
 
-    if (!jobDescription.trim()) {
+    if (!validationUtils.isValidJobDescription(jobDescription)) {
       setError(t.fillJobDescription)
       return
     }
@@ -146,64 +131,25 @@ const CompatibilityScore = ({ language = 'fr' }) => {
     setError(null)
     setResult(null)
 
-    const startTime = Date.now()
-    const requestId = Math.random().toString(36).substr(2, 9)
-
     try {
-      const formData = new FormData()
-      formData.append('resume', resumeFile)
-      
       const jobData = {
         description: jobDescription,
         requirements: requirements,
         benefits: benefits
       }
-      
-      formData.append('job_description', JSON.stringify(jobData))
 
-      const requestOptions = {
-        method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(config.REQUEST_TIMEOUT),
-      }
-
-      const apiUrl = config.COMPATIBILITY_SCORE_ENDPOINT
-      
-      logger.log(`[${requestId}] Making compatibility score request to: ${apiUrl} (will be proxied in dev)`)
-
-      const response = await fetch(apiUrl, requestOptions)
-
-      const endTime = Date.now()
-      const duration = endTime - startTime
-
-      logger.log(`[${requestId}] Response received after ${duration}ms`)
-      logger.log(`[${requestId}] Response status:`, response.status)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        logger.error(`[${requestId}] Response error:`, {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        })
-        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      logger.log(`[${requestId}] Response data:`, data)
+      const result = await apiService.calculateCompatibilityScore(resumeFile, jobData)
 
       // Handle different response formats
       let score = null
-      if (typeof data === 'number') {
-        // If the API returns just a number
-        score = data
-      } else if (data && typeof data === 'object') {
-        // If the API returns an object with a score property
-        score = data.score || data.compatibility_score || data.value
+      if (typeof result.data === 'number') {
+        score = result.data
+      } else if (result.data && typeof result.data === 'object') {
+        score = result.data.score || result.data.compatibility_score || result.data.value
       }
 
       // Validate the score
-      if (score === null || score === undefined || isNaN(score)) {
+      if (!validationUtils.isValidScore(score)) {
         throw new Error('Invalid score received from API')
       }
 
@@ -215,18 +161,11 @@ const CompatibilityScore = ({ language = 'fr' }) => {
 
       setResult({
         score: score,
-        details: data,
-        requestId,
-        duration: `${duration}ms`,
-        timestamp: new Date().toISOString()
+        details: result.data,
+        ...result
       })
 
     } catch (err) {
-      const endTime = Date.now()
-      const duration = endTime - startTime
-
-      logger.error(`[${requestId}] Request failed after ${duration}ms:`, err)
-
       let errorMessage = err.message
       
       if (err.name === 'AbortError') {
@@ -260,23 +199,10 @@ const CompatibilityScore = ({ language = 'fr' }) => {
     <div className="fade-in">
       <div className="form-group">
         <label className="form-label">{t.uploadResume}</label>
-        <div className="upload-area" onClick={() => document.getElementById('resume-input').click()}>
-          <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14,2 14,8 20,8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10,9 9,9 8,9"/>
-          </svg>
-          <div className="upload-text">{resumeFile ? resumeFile.name : t.chooseFile}</div>
-          <div className="upload-subtext">{t.clickToBrowse}</div>
-        </div>
-        <input
-          type="file"
-          accept=".pdf"
-          onChange={handleResumeChange}
-          style={{ display: 'none' }}
-          id="resume-input"
+        <FileUpload
+          onFileSelect={handleResumeSelect}
+          selectedFile={resumeFile}
+          language={language}
         />
       </div>
 
@@ -334,19 +260,16 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       </div>
 
       {isLoading && (
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>{t.processing}</p>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{t.processingTime}</p>
-        </div>
+        <LoadingSpinner 
+          message={t.processing}
+          language={language}
+        />
       )}
 
-      {error && (
-        <div className="error">
-          <h3>{t.error}</h3>
-          <p>{error}</p>
-        </div>
-      )}
+      <ErrorDisplay
+        error={error}
+        language={language}
+      />
 
       {result && result.score !== undefined && (
         <div className="results slide-in">

@@ -1,19 +1,5 @@
 // config.js
 
-// Logger utility
-export const logger = {
-  log: (...args) => {
-    if (import.meta.env.VITE_ENABLE_LOGGING === 'true') {
-      console.log(...args)
-    }
-  },
-  error: (...args) => {
-    if (import.meta.env.VITE_ENABLE_LOGGING === 'true') {
-      console.error(...args)
-    }
-  }
-}
-
 // Validate required environment variables
 const requiredEnvVars = {
   VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,

@@ -1,18 +1,15 @@
-import { useState, useEffect } from 'react'
-import ResumeParser from './ResumeParser'
-import CompatibilityScore from './CompatibilityScore'
+import React, { useState } from 'react'
 import { config } from './config'
-import './App.css'
+import { useTheme } from './hooks/useTheme'
+import { useLanguage } from './hooks/useLanguage'
+import ResumeParser from './components/ResumeParser'
+import CompatibilityScore from './components/CompatibilityScore'
+import './styles/App.css'
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false)
-  const [language, setLanguage] = useState('fr')
+  const { isDarkMode, toggleTheme, theme } = useTheme()
+  const { language, toggleLanguage } = useLanguage()
   const [activeTab, setActiveTab] = useState('resume')
-
-  useEffect(() => {
-    // Apply theme to body
-    document.body.className = isDarkMode ? 'dark-theme' : 'light-theme'
-  }, [isDarkMode])
 
   const translations = {
     fr: {
@@ -38,13 +35,13 @@ function App() {
   const t = translations[language]
 
   return (
-    <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
+    <div className={`app ${theme}`}>
       <div className="header">
         <h1 className="title">{t.title}</h1>
         <div className="controls">
           <button 
             className="control-btn"
-            onClick={() => setIsDarkMode(!isDarkMode)}
+            onClick={toggleTheme}
             title={isDarkMode ? t.lightMode : t.darkMode}
           >
             {isDarkMode ? (
@@ -67,7 +64,7 @@ function App() {
           </button>
           <button 
             className="control-btn"
-            onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+            onClick={toggleLanguage}
           >
             {language === 'fr' ? t.languageEn : t.languageFr}
           </button>
