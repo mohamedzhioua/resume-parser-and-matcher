@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { config, logger } from './config'
 
 const CompatibilityScore = ({ language = 'fr' }) => {
   const [resumeFile, setResumeFile] = useState(null)
@@ -23,7 +24,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       calculateScore: 'Calculer le Score',
       reset: 'Réinitialiser',
       processing: 'Calcul du score de compatibilité...',
-      processingTime: 'Cela peut prendre jusqu\'à 60 secondes',
+      processingTime: `Cela peut prendre jusqu'à ${config.getRequestTimeoutSeconds()} secondes`,
       error: 'Erreur',
       compatibilityScore: 'Score de Compatibilité',
       score: 'Score',
@@ -37,8 +38,9 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       poorDesc: 'Votre profil ne correspond pas bien aux exigences du poste.',
       selectResumeFirst: 'Veuillez sélectionner un CV d\'abord',
       selectValidPdf: 'Veuillez sélectionner un fichier PDF valide',
+      fileTooLarge: `Le fichier est trop volumineux. Taille maximale: ${config.getMaxFileSizeMB()} MB`,
       fillJobDescription: 'Veuillez remplir au moins la description du poste',
-      requestTimeout: 'La demande a expiré après 60 secondes. Le serveur peut être lent ou indisponible.',
+      requestTimeout: `La demande a expiré après ${config.getRequestTimeoutSeconds()} secondes. Le serveur peut être lent ou indisponible.`,
       connectionTimeout: 'Connexion expirée. Veuillez vérifier votre connexion internet et réessayer.',
       networkError: 'Erreur réseau. Veuillez vérifier votre connexion internet et réessayer.',
       sslError: 'Erreur SSL/TLS. Il peut y avoir un problème de certificat avec le serveur.',
@@ -61,7 +63,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       calculateScore: 'Calculate Score',
       reset: 'Reset',
       processing: 'Calculating compatibility score...',
-      processingTime: 'This may take up to 60 seconds',
+      processingTime: `This may take up to ${config.getRequestTimeoutSeconds()} seconds`,
       error: 'Error',
       compatibilityScore: 'Compatibility Score',
       score: 'Score',
@@ -75,8 +77,9 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       poorDesc: 'Your profile does not match well with the job requirements.',
       selectResumeFirst: 'Please select a resume first',
       selectValidPdf: 'Please select a valid PDF file',
+      fileTooLarge: `File is too large. Maximum size: ${config.getMaxFileSizeMB()} MB`,
       fillJobDescription: 'Please fill in at least the job description',
-      requestTimeout: 'Request timed out after 60 seconds. The server may be slow or unavailable.',
+      requestTimeout: `Request timed out after ${config.getRequestTimeoutSeconds()} seconds. The server may be slow or unavailable.`,
       connectionTimeout: 'Connection timed out. Please check your internet connection and try again.',
       networkError: 'Network error. Please check your internet connection and try again.',
       sslError: 'SSL/TLS error. There may be a certificate issue with the server.',
@@ -93,6 +96,11 @@ const CompatibilityScore = ({ language = 'fr' }) => {
   const handleResumeChange = (event) => {
     const file = event.target.files[0]
     if (file && file.type === 'application/pdf') {
+      if (file.size > config.MAX_FILE_SIZE) {
+        setError(t.fileTooLarge)
+        setResumeFile(null)
+        return
+      }
       setResumeFile(file)
       setError(null)
       setResult(null)
@@ -156,24 +164,24 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       const requestOptions = {
         method: 'POST',
         body: formData,
-        signal: AbortSignal.timeout(60000), // 60 second timeout
+        signal: AbortSignal.timeout(config.REQUEST_TIMEOUT),
       }
 
-      const apiUrl = '/api/get_compatibility_score'
+      const apiUrl = config.COMPATIBILITY_SCORE_ENDPOINT
       
-      console.log(`[${requestId}] Making compatibility score request to: ${apiUrl}`)
+      logger.log(`[${requestId}] Making compatibility score request to: ${apiUrl}`)
 
       const response = await fetch(apiUrl, requestOptions)
 
       const endTime = Date.now()
       const duration = endTime - startTime
 
-      console.log(`[${requestId}] Response received after ${duration}ms`)
-      console.log(`[${requestId}] Response status:`, response.status)
+      logger.log(`[${requestId}] Response received after ${duration}ms`)
+      logger.log(`[${requestId}] Response status:`, response.status)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`[${requestId}] Response error:`, {
+        logger.error(`[${requestId}] Response error:`, {
           status: response.status,
           statusText: response.statusText,
           body: errorText
@@ -182,10 +190,32 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       }
 
       const data = await response.json()
-      console.log(`[${requestId}] Response data:`, data)
+      logger.log(`[${requestId}] Response data:`, data)
+
+      // Handle different response formats
+      let score = null
+      if (typeof data === 'number') {
+        // If the API returns just a number
+        score = data
+      } else if (data && typeof data === 'object') {
+        // If the API returns an object with a score property
+        score = data.score || data.compatibility_score || data.value
+      }
+
+      // Validate the score
+      if (score === null || score === undefined || isNaN(score)) {
+        throw new Error('Invalid score received from API')
+      }
+
+      // Ensure score is a number and within valid range
+      score = Math.round(parseFloat(score))
+      if (score < 0 || score > 100) {
+        throw new Error('Score out of valid range (0-100)')
+      }
 
       setResult({
-        ...data,
+        score: score,
+        details: data,
         requestId,
         duration: `${duration}ms`,
         timestamp: new Date().toISOString()
@@ -195,7 +225,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       const endTime = Date.now()
       const duration = endTime - startTime
 
-      console.error(`[${requestId}] Request failed after ${duration}ms:`, err)
+      logger.error(`[${requestId}] Request failed after ${duration}ms:`, err)
 
       let errorMessage = err.message
       
@@ -318,7 +348,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
         </div>
       )}
 
-      {result && (
+      {result && result.score !== undefined && (
         <div className="results slide-in">
           <h3>{t.compatibilityScore}</h3>
           

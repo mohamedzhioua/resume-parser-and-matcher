@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://resume-match-dev.talinty.com',
+        target: process.env.VITE_API_BASE_URL || 'https://resume-match-dev.talinty.com',
         changeOrigin: true,
         secure: true,
         headers: {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import ResumeParser from './ResumeParser'
 import CompatibilityScore from './CompatibilityScore'
+import { config } from './config'
 import './App.css'
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
 
   const translations = {
     fr: {
-      title: 'Analyseur de CV & Évaluateur de Compatibilité',
+      title: config.APP_NAME || 'Analyseur de CV & Évaluateur de Compatibilité',
       resumeTab: 'Analyser CV',
       compatibilityTab: 'Score de Compatibilité',
       lightMode: 'Mode Clair',
@@ -24,7 +25,7 @@ function App() {
       languageEn: 'EN English'
     },
     en: {
-      title: 'CV Analyzer & Compatibility Evaluator',
+      title: config.APP_NAME || 'CV Analyzer & Compatibility Evaluator',
       resumeTab: 'Analyze CV',
       compatibilityTab: 'Compatibility Score',
       lightMode: 'Light Mode',

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { config, logger } from './config'
 
 const ResumeParser = ({ language = 'fr' }) => {
   const [selectedFile, setSelectedFile] = useState(null)
@@ -14,7 +15,7 @@ const ResumeParser = ({ language = 'fr' }) => {
       uploadAnalyze: 'Télécharger & Analyser',
       reset: 'Réinitialiser',
       processing: 'Traitement de votre CV...',
-      processingTime: 'Cela peut prendre jusqu\'à 60 secondes (temps de réponse API: ~7 secondes)',
+      processingTime: `Cela peut prendre jusqu'à ${config.getRequestTimeoutSeconds()} secondes (temps de réponse API: ~7 secondes)`,
       error: 'Erreur',
       parsedData: 'Données CV Analysées',
       requestId: 'ID de Demande',
@@ -24,7 +25,8 @@ const ResumeParser = ({ language = 'fr' }) => {
       errorType: 'Type d\'Erreur',
       selectPdfFirst: 'Veuillez sélectionner un fichier PDF d\'abord',
       selectValidPdf: 'Veuillez sélectionner un fichier PDF valide',
-      requestTimeout: 'La demande a expiré après 60 secondes. Le serveur peut être lent ou indisponible.',
+      fileTooLarge: `Le fichier est trop volumineux. Taille maximale: ${config.getMaxFileSizeMB()} MB`,
+      requestTimeout: `La demande a expiré après ${config.getRequestTimeoutSeconds()} secondes. Le serveur peut être lent ou indisponible.`,
       connectionTimeout: 'Connexion expirée. Veuillez vérifier votre connexion internet et réessayer. Le serveur peut être arrêté ou inaccessible.',
       networkError: 'Erreur réseau. Veuillez vérifier votre connexion internet et réessayer.',
       sslError: 'Erreur SSL/TLS. Il peut y avoir un problème de certificat avec le serveur.',
@@ -36,7 +38,7 @@ const ResumeParser = ({ language = 'fr' }) => {
       uploadAnalyze: 'Upload & Analyze',
       reset: 'Reset',
       processing: 'Processing your resume...',
-      processingTime: 'This may take up to 60 seconds (API response time: ~7 seconds)',
+      processingTime: `This may take up to ${config.getRequestTimeoutSeconds()} seconds (API response time: ~7 seconds)`,
       error: 'Error',
       parsedData: 'Parsed Resume Data',
       requestId: 'Request ID',
@@ -46,7 +48,8 @@ const ResumeParser = ({ language = 'fr' }) => {
       errorType: 'Error Type',
       selectPdfFirst: 'Please select a PDF file first',
       selectValidPdf: 'Please select a valid PDF file',
-      requestTimeout: 'Request timed out after 60 seconds. The server may be slow or unavailable.',
+      fileTooLarge: `File is too large. Maximum size: ${config.getMaxFileSizeMB()} MB`,
+      requestTimeout: `Request timed out after ${config.getRequestTimeoutSeconds()} seconds. The server may be slow or unavailable.`,
       connectionTimeout: 'Connection timed out. Please check your internet connection and try again. The server may be down or unreachable.',
       networkError: 'Network error. Please check your internet connection and try again.',
       sslError: 'SSL/TLS error. There may be a certificate issue with the server.',
@@ -59,11 +62,16 @@ const ResumeParser = ({ language = 'fr' }) => {
   const handleFileChange = (event) => {
     const file = event.target.files[0]
     if (file && file.type === 'application/pdf') {
+      if (file.size > config.MAX_FILE_SIZE) {
+        setError(t.fileTooLarge)
+        setSelectedFile(null)
+        return
+      }
       setSelectedFile(file)
       setError(null)
       setResponse(null)
       setRequestDetails(null)
-      console.log('File selected:', {
+      logger.log('File selected:', {
         name: file.name,
         size: file.size,
         type: file.type,
@@ -89,8 +97,8 @@ const ResumeParser = ({ language = 'fr' }) => {
     const startTime = Date.now()
     const requestId = Math.random().toString(36).substr(2, 9)
 
-    console.log(`[${requestId}] Starting upload request...`)
-    console.log(`[${requestId}] File details:`, {
+    logger.log(`[${requestId}] Starting upload request...`)
+    logger.log(`[${requestId}] File details:`, {
       name: selectedFile.name,
       size: selectedFile.size,
       type: selectedFile.type
@@ -100,21 +108,21 @@ const ResumeParser = ({ language = 'fr' }) => {
       const formData = new FormData()
       formData.append('resume', selectedFile)
 
-      console.log(`[${requestId}] FormData created with file`)
-      console.log(`[${requestId}] FormData entries:`, Array.from(formData.entries()))
+      logger.log(`[${requestId}] FormData created with file`)
+      logger.log(`[${requestId}] FormData entries:`, Array.from(formData.entries()))
 
       const requestOptions = {
         method: 'POST',
         body: formData,
-        signal: AbortSignal.timeout(60000), // 60 second timeout
+        signal: AbortSignal.timeout(config.REQUEST_TIMEOUT),
       }
 
-      const apiUrl = '/api/parse_resume'
+      const apiUrl = config.PARSE_RESUME_ENDPOINT
       
-      console.log(`[${requestId}] Making request to: ${apiUrl}`)
-      console.log(`[${requestId}] Request options:`, {
+      logger.log(`[${requestId}] Making request to: ${apiUrl}`)
+      logger.log(`[${requestId}] Request options:`, {
         method: requestOptions.method,
-        timeout: '60s',
+        timeout: `${config.getRequestTimeoutSeconds()}s`,
         hasFormData: true,
         fieldName: 'resume'
       })
@@ -124,13 +132,13 @@ const ResumeParser = ({ language = 'fr' }) => {
       const endTime = Date.now()
       const duration = endTime - startTime
 
-      console.log(`[${requestId}] Response received after ${duration}ms`)
-      console.log(`[${requestId}] Response status:`, response.status)
-      console.log(`[${requestId}] Response headers:`, Object.fromEntries(response.headers.entries()))
+      logger.log(`[${requestId}] Response received after ${duration}ms`)
+      logger.log(`[${requestId}] Response status:`, response.status)
+      logger.log(`[${requestId}] Response headers:`, Object.fromEntries(response.headers.entries()))
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`[${requestId}] Response error:`, {
+        logger.error(`[${requestId}] Response error:`, {
           status: response.status,
           statusText: response.statusText,
           body: errorText
@@ -139,7 +147,7 @@ const ResumeParser = ({ language = 'fr' }) => {
       }
 
       const data = await response.json()
-      console.log(`[${requestId}] Response data:`, data)
+      logger.log(`[${requestId}] Response data:`, data)
 
       setResponse(data)
       setRequestDetails({
@@ -153,8 +161,8 @@ const ResumeParser = ({ language = 'fr' }) => {
       const endTime = Date.now()
       const duration = endTime - startTime
 
-      console.error(`[${requestId}] Request failed after ${duration}ms:`, err)
-      console.error(`[${requestId}] Error details:`, {
+      logger.error(`[${requestId}] Request failed after ${duration}ms:`, err)
+      logger.error(`[${requestId}] Error details:`, {
         name: err.name,
         message: err.message,
         stack: err.stack
