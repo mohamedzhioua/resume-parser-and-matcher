@@ -1,12 +1,13 @@
 import React from 'react'
-import { UI_CONSTANTS } from '../constants'
+import { UI_CONSTANTS } from '@/constants'
+import type { LoadingSpinnerProps, Language } from '@/types'
 
-const LoadingSpinner = ({ 
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   message = '', 
   size = UI_CONSTANTS.SPINNER_SIZE,
   language = 'fr' 
 }) => {
-  const translations = {
+  const translations: Record<Language, Record<string, string>> = {
     fr: {
       processing: 'Traitement en cours...',
       processingTime: 'Cela peut prendre quelques secondes'

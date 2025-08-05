@@ -1,22 +1,23 @@
-// API service layer
-import { config } from '../config'
-import { API_ENDPOINTS } from '../constants'
-import { logger } from '../utils/logger'
-import { validationUtils } from '../utils/validation'
+import { config } from '@/config'
+import { API_ENDPOINTS } from '@/constants'
+import { logger } from '@/utils/logger'
+import { validationUtils } from '@/utils/validation'
+import type { ApiService, ApiResponse, ResumeParseResult, CompatibilityScoreResult, JobDescription } from '@/types'
 
-class ApiService {
+class ApiServiceClass implements ApiService {
+  private timeout: number
+
   constructor() {
-    this.baseUrl = config.API_BASE_URL
     this.timeout = config.REQUEST_TIMEOUT
   }
 
   /**
    * Makes an API request with proper error handling
-   * @param {string} url - Request URL
-   * @param {Object} options - Fetch options
-   * @returns {Promise<Object>} - API response
+   * @param url - Request URL
+   * @param options - Fetch options
+   * @returns API response
    */
-  async makeRequest(url, options = {}) {
+  async makeRequest<T = any>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const requestId = validationUtils.generateRequestId()
     const startTime = Date.now()
 
@@ -65,14 +66,14 @@ class ApiService {
 
   /**
    * Parses a resume file
-   * @param {File} resumeFile - Resume file to parse
-   * @returns {Promise<Object>} - Parsed resume data
+   * @param resumeFile - Resume file to parse
+   * @returns Parsed resume data
    */
-  async parseResume(resumeFile) {
+  async parseResume(resumeFile: File): Promise<ApiResponse<ResumeParseResult>> {
     const formData = new FormData()
     formData.append('resume', resumeFile)
 
-    return this.makeRequest(API_ENDPOINTS.PARSE_RESUME, {
+    return this.makeRequest<ResumeParseResult>(API_ENDPOINTS.PARSE_RESUME, {
       method: 'POST',
       body: formData
     })
@@ -80,20 +81,20 @@ class ApiService {
 
   /**
    * Calculates compatibility score
-   * @param {File} resumeFile - Resume file
-   * @param {Object} jobData - Job description data
-   * @returns {Promise<Object>} - Compatibility score
+   * @param resumeFile - Resume file
+   * @param jobData - Job description data
+   * @returns Compatibility score
    */
-  async calculateCompatibilityScore(resumeFile, jobData) {
+  async calculateCompatibilityScore(resumeFile: File, jobData: JobDescription): Promise<ApiResponse<CompatibilityScoreResult>> {
     const formData = new FormData()
     formData.append('resume', resumeFile)
     formData.append('job_description', JSON.stringify(jobData))
 
-    return this.makeRequest(API_ENDPOINTS.COMPATIBILITY_SCORE, {
+    return this.makeRequest<CompatibilityScoreResult>(API_ENDPOINTS.COMPATIBILITY_SCORE, {
       method: 'POST',
       body: formData
     })
   }
 }
 
-export const apiService = new ApiService() 
+export const apiService: ApiService = new ApiServiceClass() 

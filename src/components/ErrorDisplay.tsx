@@ -1,11 +1,12 @@
 import React from 'react'
+import type { ErrorDisplayProps, Language } from '@/types'
 
-const ErrorDisplay = ({ 
+const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ 
   error, 
   requestDetails = null,
   language = 'fr' 
 }) => {
-  const translations = {
+  const translations: Record<Language, Record<string, string>> = {
     fr: {
       error: 'Erreur',
       requestId: 'ID de Demande',

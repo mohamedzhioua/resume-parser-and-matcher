@@ -1,4 +1,4 @@
-// config.js
+import type { Config } from '@/types'
 
 // Validate required environment variables
 const requiredEnvVars = {
@@ -10,7 +10,7 @@ const requiredEnvVars = {
 }
 
 const missingVars = Object.entries(requiredEnvVars)
-  .filter(([key, value]) => !value)
+  .filter(([, value]) => !value)
   .map(([key]) => key)
 
 if (missingVars.length > 0) {
@@ -33,7 +33,7 @@ if (missingVars.length > 0) {
   throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`)
 }
 
-export const config = {
+export const config: Config = {
   // API Configuration
   API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
   PARSE_RESUME_ENDPOINT: import.meta.env.VITE_PARSE_RESUME_ENDPOINT,
@@ -56,6 +56,4 @@ export const config = {
   getRequestTimeoutSeconds: () => Math.round(config.REQUEST_TIMEOUT / 1000),
   isDevelopment: () => config.DEV_MODE,
   shouldLog: () => config.ENABLE_LOGGING
-}
-  
-  
+} 

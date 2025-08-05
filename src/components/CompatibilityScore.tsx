@@ -1,22 +1,22 @@
 import React, { useState } from 'react'
-import { apiService } from '../services/api'
-import { validationUtils } from '../utils/validation'
-import { logger } from '../utils/logger'
-import { APP_CONSTANTS } from '../constants'
+import { apiService } from '@/services/api'
+import { validationUtils } from '@/utils/validation'
+import { APP_CONSTANTS } from '@/constants'
 import FileUpload from './FileUpload'
 import LoadingSpinner from './LoadingSpinner'
 import ErrorDisplay from './ErrorDisplay'
+import type { CompatibilityScoreProps, Language, CompatibilityScoreResult, JobDescription } from '@/types'
 
-const CompatibilityScore = ({ language = 'fr' }) => {
-  const [resumeFile, setResumeFile] = useState(null)
-  const [jobDescription, setJobDescription] = useState('')
-  const [requirements, setRequirements] = useState('')
-  const [benefits, setBenefits] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
+const CompatibilityScore: React.FC<CompatibilityScoreProps> = ({ language = 'fr' }) => {
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [jobDescription, setJobDescription] = useState<string>('')
+  const [requirements, setRequirements] = useState<string>('')
+  const [benefits, setBenefits] = useState<string>('')
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [result, setResult] = useState<CompatibilityScoreResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const translations = {
+  const translations: Record<Language, Record<string, string>> = {
     fr: {
       uploadResume: 'Télécharger CV',
       jobDescription: 'Description du Poste',
@@ -89,34 +89,34 @@ const CompatibilityScore = ({ language = 'fr' }) => {
 
   const t = translations[language]
 
-  const handleResumeSelect = (file, error) => {
+  const handleResumeSelect = (file: File | null, error: string | null): void => {
     setResumeFile(file)
     setError(error)
     setResult(null)
   }
 
-  const getScoreClass = (score) => {
+  const getScoreClass = (score: number): string => {
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.EXCELLENT) return 'score-excellent'
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.GOOD) return 'score-good'
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.FAIR) return 'score-fair'
     return 'score-poor'
   }
 
-  const getScoreLabel = (score) => {
+  const getScoreLabel = (score: number): string => {
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.EXCELLENT) return t.excellent
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.GOOD) return t.good
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.FAIR) return t.fair
     return t.poor
   }
 
-  const getScoreDescription = (score) => {
+  const getScoreDescription = (score: number): string => {
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.EXCELLENT) return t.excellentDesc
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.GOOD) return t.goodDesc
     if (score >= APP_CONSTANTS.SCORE_THRESHOLDS.FAIR) return t.fairDesc
     return t.poorDesc
   }
 
-  const handleCalculateScore = async () => {
+  const handleCalculateScore = async (): Promise<void> => {
     if (!resumeFile) {
       setError(t.selectResumeFirst)
       return
@@ -132,7 +132,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
     setResult(null)
 
     try {
-      const jobData = {
+      const jobData: JobDescription = {
         description: jobDescription,
         requirements: requirements,
         benefits: benefits
@@ -141,11 +141,11 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       const result = await apiService.calculateCompatibilityScore(resumeFile, jobData)
 
       // Handle different response formats
-      let score = null
+      let score: number | null = null
       if (typeof result.data === 'number') {
         score = result.data
       } else if (result.data && typeof result.data === 'object') {
-        score = result.data.score || result.data.compatibility_score || result.data.value
+        score = (result.data as any).score || (result.data as any).compatibility_score || (result.data as any).value
       }
 
       // Validate the score
@@ -154,18 +154,20 @@ const CompatibilityScore = ({ language = 'fr' }) => {
       }
 
       // Ensure score is a number and within valid range
-      score = Math.round(parseFloat(score))
-      if (score < 0 || score > 100) {
+      const finalScore = Math.round(parseFloat(score!.toString()))
+      if (finalScore < 0 || finalScore > 100) {
         throw new Error('Score out of valid range (0-100)')
       }
 
       setResult({
-        score: score,
+        score: finalScore,
         details: result.data,
-        ...result
+        requestId: result.requestId,
+        duration: result.duration,
+        timestamp: result.timestamp
       })
 
-    } catch (err) {
+    } catch (err: any) {
       let errorMessage = err.message
       
       if (err.name === 'AbortError') {
@@ -186,7 +188,7 @@ const CompatibilityScore = ({ language = 'fr' }) => {
     }
   }
 
-  const handleReset = () => {
+  const handleReset = (): void => {
     setResumeFile(null)
     setJobDescription('')
     setRequirements('')

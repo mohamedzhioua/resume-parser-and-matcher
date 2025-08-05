@@ -1,20 +1,26 @@
 import React, { useState } from 'react'
-import { apiService } from '../services/api'
-import { validationUtils } from '../utils/validation'
-import { logger } from '../utils/logger'
-import { config } from '../config'
+import { apiService } from '@/services/api'
+import { validationUtils } from '@/utils/validation'
+import { config } from '@/config'
 import FileUpload from './FileUpload'
 import LoadingSpinner from './LoadingSpinner'
 import ErrorDisplay from './ErrorDisplay'
+import type { ResumeParserProps, Language, ResumeParseResult } from '@/types'
 
-const ResumeParser = ({ language = 'fr' }) => {
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [response, setResponse] = useState(null)
-  const [error, setError] = useState(null)
-  const [requestDetails, setRequestDetails] = useState(null)
+const ResumeParser: React.FC<ResumeParserProps> = ({ language = 'fr' }) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [response, setResponse] = useState<ResumeParseResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [requestDetails, setRequestDetails] = useState<{
+    requestId: string
+    duration: string
+    fileSize?: number
+    timestamp: string
+    error?: string
+  } | null>(null)
 
-  const translations = {
+  const translations: Record<Language, Record<string, string>> = {
     fr: {
       uploadAnalyze: 'Télécharger & Analyser',
       reset: 'Réinitialiser',
@@ -53,14 +59,14 @@ const ResumeParser = ({ language = 'fr' }) => {
 
   const t = translations[language]
 
-  const handleFileSelect = (file, error) => {
+  const handleFileSelect = (file: File | null, error: string | null): void => {
     setSelectedFile(file)
     setError(error)
     setResponse(null)
     setRequestDetails(null)
   }
 
-  const handleUpload = async () => {
+  const handleUpload = async (): Promise<void> => {
     if (!selectedFile) {
       setError(t.selectPdfFirst)
       return
@@ -80,7 +86,7 @@ const ResumeParser = ({ language = 'fr' }) => {
         fileSize: selectedFile.size
       })
 
-    } catch (err) {
+    } catch (err: any) {
       let errorMessage = err.message
       
       if (err.name === 'AbortError') {
@@ -107,7 +113,7 @@ const ResumeParser = ({ language = 'fr' }) => {
     }
   }
 
-  const handleReset = () => {
+  const handleReset = (): void => {
     setSelectedFile(null)
     setError(null)
     setResponse(null)

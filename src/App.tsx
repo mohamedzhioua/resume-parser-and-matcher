@@ -1,17 +1,18 @@
 import React, { useState } from 'react'
-import { config } from './config'
-import { useTheme } from './hooks/useTheme'
-import { useLanguage } from './hooks/useLanguage'
-import ResumeParser from './components/ResumeParser'
-import CompatibilityScore from './components/CompatibilityScore'
-import './styles/App.css'
+import { config } from '@/config'
+import { useTheme } from '@/hooks/useTheme'
+import { useLanguage } from '@/hooks/useLanguage'
+import ResumeParser from '@/components/ResumeParser'
+import CompatibilityScore from '@/components/CompatibilityScore'
+import '@/styles/App.css'
+import type { Language, ActiveTab } from '@/types'
 
-function App() {
+const App: React.FC = () => {
   const { isDarkMode, toggleTheme, theme } = useTheme()
   const { language, toggleLanguage } = useLanguage()
-  const [activeTab, setActiveTab] = useState('resume')
+  const [activeTab, setActiveTab] = useState<ActiveTab>('resume')
 
-  const translations = {
+  const translations: Record<Language, Record<string, string>> = {
     fr: {
       title: config.APP_NAME || 'Analyseur de CV & Évaluateur de Compatibilité',
       resumeTab: 'Analyser CV',
