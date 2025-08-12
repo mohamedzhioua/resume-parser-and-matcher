@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { useLanguage } from '@/hooks/useLanguage'
 import ResumeParser from '@/components/ResumeParser'
 import CompatibilityScore from '@/components/CompatibilityScore'
-import SeniorFrontendScore from '@/components/SeniorFrontendScore'
+import CompatibilityScoreWithResume from '@/components/CompatibilityScoreWithResume'
 import '@/styles/App.css'
 import type { Language, ActiveTab } from '@/types'
 
@@ -122,7 +122,7 @@ const App: React.FC = () => {
           ) : activeTab === 'compatibility' ? (
             <CompatibilityScore language={language} />
           ) : (
-            <SeniorFrontendScore language={language} />
+            <CompatibilityScoreWithResume language={language} />
           )}
         </div>
       </div>

@@ -7,11 +7,11 @@ import LoadingSpinner from './LoadingSpinner'
 import ErrorDisplay from './ErrorDisplay'
 import type { Language, CompatibilityScoreResult, JobDescription } from '@/types'
 
-interface SeniorFrontendScoreProps {
+interface CompatibilityScoreWithResumeProps {
   language: Language
 }
 
-const SeniorFrontendScore: React.FC<SeniorFrontendScoreProps> = ({ language = 'fr' }) => {
+const CompatibilityScoreWithResume: React.FC<CompatibilityScoreWithResumeProps> = ({ language = 'fr' }) => {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [jobDescription, setJobDescription] = useState<string>('')
   const [requirements, setRequirements] = useState<string>('')
@@ -32,7 +32,7 @@ const SeniorFrontendScore: React.FC<SeniorFrontendScoreProps> = ({ language = 'f
       calculateScore: 'Calculer le Score (avec CV)',
       reset: 'Réinitialiser',
       processing: 'Évaluation de la compatibilité (avec CV)...',
-      processingTime: `Cette évaluation peut prendre jusqu\'à ${APP_CONSTANTS.REQUEST_TIMEOUT / 1000} secondes`,
+      processingTime: `Cette évaluation peut prendre jusqu'\à ${APP_CONSTANTS.REQUEST_TIMEOUT / 1000} secondes`,
       compatibilityScore: 'Score de Compatibilité (avec CV)',
       score: 'Score',
       excellent: 'Excellent',
@@ -148,7 +148,6 @@ const SeniorFrontendScore: React.FC<SeniorFrontendScoreProps> = ({ language = 'f
 
       const result = await apiService.calculateSeniorFrontendScore(resumeFile, jobData)
 
-      // Handle different response formats
       let score: number | null = null
       if (typeof result.data === 'number') {
         score = result.data
@@ -156,12 +155,10 @@ const SeniorFrontendScore: React.FC<SeniorFrontendScoreProps> = ({ language = 'f
         score = (result.data as any).score || (result.data as any).compatibility_score || (result.data as any).value
       }
 
-      // Validate the score
       if (!validationUtils.isValidScore(score)) {
         throw new Error('Invalid score received from API')
       }
 
-      // Ensure score is a number and within valid range
       const finalScore = Math.round(parseFloat(score!.toString()))
       if (finalScore < 0 || finalScore > 100) {
         throw new Error('Score out of valid range (0-100)')
@@ -318,4 +315,4 @@ const SeniorFrontendScore: React.FC<SeniorFrontendScoreProps> = ({ language = 'f
   )
 }
 
-export default SeniorFrontendScore
+export default CompatibilityScoreWithResume
