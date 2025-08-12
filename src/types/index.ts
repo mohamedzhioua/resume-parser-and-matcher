@@ -62,7 +62,7 @@ export interface ResumeParseResult {
 
 export type Language = 'fr' | 'en'
 export type Theme = 'light' | 'dark'
-export type ActiveTab = 'resume' | 'compatibility'
+export type ActiveTab = 'resume' | 'compatibility' | 'senior-frontend'
 
 export interface TranslationKeys {
   // Resume Parser translations
@@ -136,6 +136,8 @@ export interface Config {
   API_BASE_URL: string
   PARSE_RESUME_ENDPOINT: string
   COMPATIBILITY_SCORE_ENDPOINT: string
+  COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT: string
+  AUTHORIZATION_TOKEN?: string
   APP_NAME: string
   APP_VERSION: string
   REQUEST_TIMEOUT: number
@@ -169,6 +171,7 @@ export interface ApiService {
   makeRequest: <T = any>(url: string, options?: RequestInit) => Promise<ApiResponse<T>>
   parseResume: (resumeFile: File) => Promise<ApiResponse<ResumeParseResult>>
   calculateCompatibilityScore: (resumeFile: File, jobData: JobDescription) => Promise<ApiResponse<CompatibilityScoreResult>>
+  calculateSeniorFrontendScore: (resumeFile: File, jobData: JobDescription) => Promise<ApiResponse<CompatibilityScoreResult>>
 }
 
 export interface ThemeHook {
@@ -222,8 +225,10 @@ declare global {
     readonly VITE_API_BASE_URL: string
     readonly VITE_PARSE_RESUME_ENDPOINT: string
     readonly VITE_COMPATIBILITY_SCORE_ENDPOINT: string
+    readonly VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT: string
     readonly VITE_REQUEST_TIMEOUT: string
     readonly VITE_MAX_FILE_SIZE: string
+    readonly VITE_API_BASE_URL_Authorization?: string
     readonly VITE_APP_NAME?: string
     readonly VITE_APP_VERSION?: string
     readonly VITE_DEV_MODE?: string

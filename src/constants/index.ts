@@ -18,7 +18,8 @@ export const APP_CONSTANTS = {
 // API endpoints
 export const API_ENDPOINTS = {
   PARSE_RESUME: '/api/parse_resume',
-  COMPATIBILITY_SCORE: '/api/get_compatibility_score'
+  COMPATIBILITY_SCORE: '/api/get_compatibility_score',
+  COMPATIBILITY_SCORE_WITH_RESUME: '/api/get_compatibility_score_with_resume'
 } as const
 
 // UI constants

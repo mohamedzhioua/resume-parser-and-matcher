@@ -5,6 +5,7 @@ const requiredEnvVars = {
   VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
   VITE_PARSE_RESUME_ENDPOINT: import.meta.env.VITE_PARSE_RESUME_ENDPOINT,
   VITE_COMPATIBILITY_SCORE_ENDPOINT: import.meta.env.VITE_COMPATIBILITY_SCORE_ENDPOINT,
+  VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT: import.meta.env.VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT,
   VITE_REQUEST_TIMEOUT: import.meta.env.VITE_REQUEST_TIMEOUT,
   VITE_MAX_FILE_SIZE: import.meta.env.VITE_MAX_FILE_SIZE
 }
@@ -22,6 +23,7 @@ if (missingVars.length > 0) {
   console.error('VITE_API_BASE_URL=https://resume-match-dev.talinty.com')
   console.error('VITE_PARSE_RESUME_ENDPOINT=/api/parse_resume')
   console.error('VITE_COMPATIBILITY_SCORE_ENDPOINT=/api/get_compatibility_score')
+  console.error('VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT=/api/senior_frontend_compatibility_score')
   console.error('VITE_REQUEST_TIMEOUT=30000')
   console.error('VITE_MAX_FILE_SIZE=10485760')
   console.error('\n💡 Optional variables:')
@@ -29,6 +31,7 @@ if (missingVars.length > 0) {
   console.error('VITE_APP_VERSION=1.0.0')
   console.error('VITE_DEV_MODE=true')
   console.error('VITE_ENABLE_LOGGING=true')
+  console.error('VITE_API_BASE_URL_Authorization=your_bearer_token_here')
   
   throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`)
 }
@@ -38,6 +41,8 @@ export const config: Config = {
   API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
   PARSE_RESUME_ENDPOINT: import.meta.env.VITE_PARSE_RESUME_ENDPOINT,
   COMPATIBILITY_SCORE_ENDPOINT: import.meta.env.VITE_COMPATIBILITY_SCORE_ENDPOINT,
+  COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT: import.meta.env.VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT,
+  AUTHORIZATION_TOKEN: import.meta.env.VITE_API_BASE_URL_Authorization,
   
   // Application Configuration
   APP_NAME: import.meta.env.VITE_APP_NAME || 'Resume Parser App',

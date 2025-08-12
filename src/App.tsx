@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { useLanguage } from '@/hooks/useLanguage'
 import ResumeParser from '@/components/ResumeParser'
 import CompatibilityScore from '@/components/CompatibilityScore'
+import SeniorFrontendScore from '@/components/SeniorFrontendScore'
 import '@/styles/App.css'
 import type { Language, ActiveTab } from '@/types'
 
@@ -17,6 +18,7 @@ const App: React.FC = () => {
       title: config.APP_NAME || 'Analyseur de CV & Évaluateur de Compatibilité',
       resumeTab: 'Analyser CV',
       compatibilityTab: 'Score de Compatibilité',
+      seniorFrontendTab: 'Score avec CV',
       lightMode: 'Mode Clair',
       darkMode: 'Mode Sombre',
       language: 'FR Français',
@@ -26,6 +28,7 @@ const App: React.FC = () => {
       title: config.APP_NAME || 'CV Analyzer & Compatibility Evaluator',
       resumeTab: 'Analyze CV',
       compatibilityTab: 'Compatibility Score',
+      seniorFrontendTab: 'Score with Resume',
       lightMode: 'Light Mode',
       darkMode: 'Dark Mode',
       language: 'EN English',
@@ -98,13 +101,28 @@ const App: React.FC = () => {
             </svg>
             {t.compatibilityTab}
           </button>
+          <button 
+            className={`tab ${activeTab === 'senior-frontend' ? 'active' : ''}`}
+            onClick={() => setActiveTab('senior-frontend')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 12l2 2 4-4"/>
+              <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3z"/>
+              <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3z"/>
+              <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3z"/>
+              <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3z"/>
+            </svg>
+            {t.seniorFrontendTab}
+          </button>
         </div>
 
         <div className="tab-content">
           {activeTab === 'resume' ? (
             <ResumeParser language={language} />
-          ) : (
+          ) : activeTab === 'compatibility' ? (
             <CompatibilityScore language={language} />
+          ) : (
+            <SeniorFrontendScore language={language} />
           )}
         </div>
       </div>

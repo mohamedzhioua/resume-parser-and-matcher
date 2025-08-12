@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
   console.log('🔍 Vite Config Environment Variables:')
   console.log('VITE_PARSE_RESUME_ENDPOINT:', env.VITE_PARSE_RESUME_ENDPOINT)
   console.log('VITE_API_BASE_URL:', env.VITE_API_BASE_URL)
+  console.log('VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT:', env.VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT)
 
   return {
     plugins: [react()],
@@ -26,7 +27,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        // Proxy both endpoints to avoid CORS issues
+        // Proxy all API endpoints to avoid CORS issues
         '/api/parse_resume': {
           target: env.VITE_API_BASE_URL || 'https://resume-match-dev.talinty.com',
           changeOrigin: true,
@@ -34,6 +35,14 @@ export default defineConfig(({ mode }) => {
           headers: {
             'Origin': 'https://astrolab.testbo.talinty.com',
             'Referer': 'https://astrolab.testbo.talinty.com/',
+          },
+          configure: (proxy, options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              // Forward authorization header if present
+              if (req.headers.authorization) {
+                proxyReq.setHeader('Authorization', req.headers.authorization)
+              }
+            })
           }
         },
         '/api/get_compatibility_score': {
@@ -43,6 +52,31 @@ export default defineConfig(({ mode }) => {
           headers: {
             'Origin': 'https://astrolab.testbo.talinty.com',
             'Referer': 'https://astrolab.testbo.talinty.com/',
+          },
+          configure: (proxy, options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              // Forward authorization header if present
+              if (req.headers.authorization) {
+                proxyReq.setHeader('Authorization', req.headers.authorization)
+              }
+            })
+          }
+        },
+        [env.VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT || '/api/senior_frontend_compatibility_score']: {
+          target: env.VITE_API_BASE_URL || 'https://resume-match-dev.talinty.com',
+          changeOrigin: true,
+          secure: true,
+          headers: {
+            'Origin': 'https://astrolab.testbo.talinty.com',
+            'Referer': 'https://astrolab.testbo.talinty.com/',
+          },
+          configure: (proxy, options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              // Forward authorization header if present
+              if (req.headers.authorization) {
+                proxyReq.setHeader('Authorization', req.headers.authorization)
+              }
+            })
           }
         }
       }

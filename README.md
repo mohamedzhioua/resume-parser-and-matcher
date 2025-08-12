@@ -7,6 +7,7 @@ A modern, enterprise-grade React application for parsing resumes and analyzing j
 ### Core Functionality
 - **Resume Parsing**: Upload and analyze PDF resumes with detailed extraction
 - **Compatibility Scoring**: Calculate job compatibility scores based on resume and job requirements
+- **Senior Frontend Evaluation**: Specialized compatibility analysis for Senior Frontend Engineer positions
 - **Multi-language Support**: French and English interfaces
 - **Theme Switching**: Light and dark mode support
 - **Real-time Processing**: Live feedback during API operations
@@ -127,8 +128,10 @@ Create a `.env` file in the project root with the following variables:
 - `VITE_API_BASE_URL`: Backend API base URL
 - `VITE_PARSE_RESUME_ENDPOINT`: Resume parsing endpoint
 - `VITE_COMPATIBILITY_SCORE_ENDPOINT`: Compatibility scoring endpoint
+- `VITE_COMPATIBILITY_SCORE_WITH_RESUME_ENDPOINT`: Senior frontend compatibility scoring endpoint
 - `VITE_REQUEST_TIMEOUT`: API request timeout (milliseconds)
 - `VITE_MAX_FILE_SIZE`: Maximum file upload size (bytes)
+- `VITE_API_BASE_URL_Authorization`: Bearer token for authorized endpoints
 
 **Optional Variables:**
 - `VITE_APP_NAME`: Application display name
@@ -166,9 +169,10 @@ npx tsc --noEmit --watch
 ## 🔧 Configuration
 
 ### API Endpoints
-The application supports two main API endpoints:
+The application supports three main API endpoints:
 - **Resume Parser**: Processes PDF resumes and extracts structured data
 - **Compatibility Score**: Analyzes resume-job compatibility and returns scores
+- **Senior Frontend Score**: Specialized evaluation for Senior Frontend Engineer positions (requires authorization)
 
 ### Proxy Configuration
 Development environment uses Vite proxy for:
